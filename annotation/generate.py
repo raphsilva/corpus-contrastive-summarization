@@ -370,14 +370,17 @@ for filename in files_to_read:
         f.write(i.replace('>', ' ') + '\n\n')
     f.write('\n')
     for i in info_raw['data']:
-        if i['sentence'] not in [y['sentence'] for y in info_revised['data']]:
-            f.write('<' + opinionToStringPlain(i))
-            f.write('\n')
-            for j in info_revised['data']:
-                if j['sentence_id'] == i['sentence_id']:
+        first = True
+        for j in info_revised['data']:
+            if j['sentence_id'] == i['sentence_id']:
+                if (i['sentence'], i['polarity'], i['aspect']) != (j['sentence'], j['polarity'], j['aspect']):
+                    if first:
+                        f.write('\n<' + opinionToStringPlain(i))
+                        f.write('\n')
+                        first = False
                     f.write('>' + opinionToStringPlain(j))
                     f.write('\n')
-            f.write('\n')
+
     f.close()
 
     count_aspects = countAspects(data_merged)
@@ -402,7 +405,7 @@ for filename in files_to_read:
 
     f = open(DIR_FORMATTED_NOSPLIT + '/' + filename_save + '.txt', 'w')
 
-    info_revised['meta'].append('> Total of opinions: %d' % (len(data_revised)))
+    info_revised['meta'].append('> Total of opinions: %d' % (sum([len(i['excerpts']) for i in data_merged])))
     info_revised['meta'].append('> Total of sentences: %d' % (len(data_merged)))
 
     for i in info_revised['meta']:
@@ -414,7 +417,6 @@ for filename in files_to_read:
     unikey(formatSentence(k['sentence']))))
 
     for i in data_parsed_by_aspects:
-
         f.write('(%03d.%03d)\n%s\n\n' % (int(i['review_id']), int(i['sentence_id']), i['sentence']))
         for s in range(len(i['aspect'])):
             f.write('%s %-2s\n' % (i['aspect'][s], i['polarity'][s]))
@@ -456,4 +458,8 @@ for filename in files_to_read:
 
     f = open(DIR_OUTPUT_JSON + '/' + filename_save + '.json', 'w')
     f.write(json.dumps(s, sort_keys=True, indent=4, separators=(',', ': '), ensure_ascii=False))
+    f.close()
+
+    f = open('input/automatic/' + filename_save + '.json', 'w')
+    f.write(json.dumps(info_raw, sort_keys=True, indent=4, separators=(',', ': '), ensure_ascii=False))
     f.close()
